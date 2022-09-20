@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DesignSurface">
+    <option name="filePathToZoomLevelMap">
+      <map>
+        <entry key="../../.gradle/caches/transforms-3/61cba2ee2485c6faf65ab2fd88e45b11/transformed/jetified-pictureselector-v3.0.5/res/drawable/ps_image_placeholder.xml" value="0.1235" />
+        <entry key="..\:/android/project/DemoTest/app/src/main/res/drawable/bg.xml" value="0.2765625" />
+        <entry key="..\:/android/project/DemoTest/app/src/main/res/drawable/divider.xml" value="0.40923076923076923" />
+        <entry key="..\:/android/project/DemoTest/app/src/main/res/layout/activity_main.xml" value="0.22447916666666667" />
+        <entry key="..\:/android/project/DemoTest/app/src/main/res/layout/activity_video.xml" value="0.176" />
+        <entry key="..\:/android/project/DemoTest/app/src/main/res/layout/custom_fragment.xml" value="0.264" />
+        <entry key="..\:/android/project/DemoTest/app/src/main/res/layout/custom_video_fragment.xml" value="0.264" />
+        <entry key="..\:/android/project/DemoTest/app/src/main/res/layout/focusview_show.xml" value="0.3640625" />
+        <entry key="..\:/android/project/DemoTest/app/src/main/res/layout/fragment_page.xml" value="0.2" />
+        <entry key="..\:/android/project/DemoTest/app/src/main/res/layout/item_page.xml" value="0.2" />
+        <entry key="..\:/android/project/DemoTest/app/src/main/res/layout/item_pop.xml" value="0.3385416666666667" />
+        <entry key="..\:/android/project/DemoTest/app/src/main/res/layout/item_recycler.xml" value="0.536" />
+        <entry key="..\:/android/project/DemoTest/app/src/main/res/layout/layout_pop.xml" value="0.2604166666666667" />
+        <entry key="..\:/android/project/DemoTest/app/src/main/res/layout/layout_video.xml" value="0.3640625" />
+        <entry key="..\:/android/project/DemoTest/app/src/main/res/layout/main_item_page.xml" value="0.2" />
+        <entry key="..\:/android/project/DemoTest/camerax/src/main/res/layout/picture_camera_view.xml" value="0.3385416666666667" />
+        <entry key="app/src/main/res/layout/activity_main.xml" value="0.25" />
+        <entry key="app/src/main/res/layout/activity_video.xml" value="0.18055555555555555" />
+        <entry key="app/src/main/res/layout/custom_fragment.xml" value="0.21481481481481482" />
+      </map>
+    </option>
+  </component>
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_11" project-jdk-name="1.8" project-jdk-type="JavaSDK">
+    <output url="file://$PROJECT_DIR$/build/classes" />
+  </component>
+  <component name="ProjectType">
+    <option name="id" value="Android" />
+  </component>
+</project>
