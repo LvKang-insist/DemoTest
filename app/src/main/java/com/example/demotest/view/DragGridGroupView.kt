@@ -1,5 +1,6 @@
 package com.example.demotest.view
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Color
 import android.graphics.Point
@@ -63,7 +64,7 @@ class DragGridGroupView : FrameLayout {
         }
     }
 
-    val gridLayout by lazy {
+    private val gridLayout by lazy {
         GridLayout(context).apply {
             val layoutParams =
                 FrameLayout.LayoutParams(sizePoint.x * gridColumnCount, sizePoint.y * gridRowCount)
@@ -90,6 +91,7 @@ class DragGridGroupView : FrameLayout {
 
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
@@ -101,10 +103,7 @@ class DragGridGroupView : FrameLayout {
             MotionEvent.ACTION_MOVE -> {
                 val x = (event.x - downPoint.x) + viewPoint.x
                 val y = (event.y - downPoint.y) + viewPoint.y
-                if (boundaryJudge(x, y)) return true
-                println("$x -- $y---------- ${gridLayout.width}      ${gridLayout.height}")
-                view.x = x
-                view.y = y
+                move(x, y)
                 if (x > gridLayout.x && y > gridLayout.y && x < (gridLayout.width + gridLayout.x) && y < (gridLayout.height + gridLayout.y)) {
                     fillingGrid(x, y)
                 }
@@ -135,12 +134,30 @@ class DragGridGroupView : FrameLayout {
 
     }
 
-    private fun boundaryJudge(x: Float, y: Float): Boolean {
-        if (x < 0) return true
-        if (y < 0) return true
-        if (x > (width - sizePoint.x)) return true
-        if (y > (height - sizePoint.y)) return true
-        return false
+    private fun move(x: Float, y: Float) {
+        val right = (width - sizePoint.x)
+        val bottom = (height - sizePoint.y)
+        if (x > 0 && y > 0 && x < right && y < bottom) {
+            view.x = x
+            view.y = y
+            return
+        }
+        if (x < 0 ) {
+            view.x = 0f
+            view.y = y
+        }
+        if (y < 0) {
+            view.y = 0f
+            view.x = x
+        }
+        if (x > right) {
+            view.x = right.toFloat()
+            view.y = y
+        }
+        if (y > bottom) {
+            view.y = bottom.toFloat()
+            view.x = x
+        }
     }
 
     private fun fillingGrid(x: Float, y: Float) {
@@ -153,8 +170,7 @@ class DragGridGroupView : FrameLayout {
         val j = (ny / sizePoint.y).toInt()
 
         if (j >= gridRowCount || i >= gridColumnCount) return
-//        println("$nx   $ny     $i  $j")
-//
+
         val v = array[j][i]
         if (preView != null && preView == v) {
             return
@@ -196,8 +212,6 @@ class DragGridGroupView : FrameLayout {
         val scale: Float = resources.displayMetrics.density
         return (dpValue * scale + 0.5f).toInt()
     }
-
-
 
 
 }
