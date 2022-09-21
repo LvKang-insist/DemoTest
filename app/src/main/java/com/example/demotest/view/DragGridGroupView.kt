@@ -1,11 +1,10 @@
 package com.example.demotest.view
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Color
 import android.graphics.Point
+import android.graphics.PointF
 import android.util.AttributeSet
-import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.widget.FrameLayout
@@ -34,12 +33,25 @@ class DragGridGroupView : FrameLayout {
     ) : super(context, attrs, defStyleAttr, defStyleRes)
 
     lateinit var array: Array<Array<View>>
+    private val gridRowCount = 10 //竖向数量
+    private val gridColumnCount = 5 //横向数量
+
+    private var preView: View? = null
 
     //初始位置
     private val initPoint: Point = Point(dpToPx(30f), dpToPx(50f))
 
     //格子大小
     private val sizePoint: Point = Point(dpToPx(30f), dpToPx(30f))
+
+    //按下位置
+    private val downPoint: PointF = PointF(0f, 0f)
+    private val viewPoint: PointF = PointF(0f, 0f)
+
+
+    private val defaultGridColor = Color.parseColor("#8A8C8E")
+    private val scrollSelectColor = Color.parseColor("#2F3132")
+    private val selectColor = Color.parseColor("#00BD2F")
 
     val view by lazy {
         View(context).apply {
@@ -53,37 +65,119 @@ class DragGridGroupView : FrameLayout {
 
     val gridLayout by lazy {
         GridLayout(context).apply {
-            val layoutParams = FrameLayout.LayoutParams(dpToPx(30f), dpToPx(30f))
-            layoutParams.marginStart = dpToPx(30f)
-            layoutParams.topMargin = dpToPx(100f)
-            layoutParams.width = dpToPx(150f)
-            layoutParams.height = dpToPx(500f)
+            val layoutParams =
+                FrameLayout.LayoutParams(sizePoint.x * gridColumnCount, sizePoint.y * gridRowCount)
+
+            layoutParams.marginStart = initPoint.x
+            layoutParams.topMargin = initPoint.y + (sizePoint.y * 2)
+
             this.layoutParams = layoutParams
             setBackgroundColor(Color.BLUE)
             orientation = GridLayout.HORIZONTAL
-            columnCount = 5
-            rowCount = 10
+            columnCount = gridColumnCount
+            rowCount = gridRowCount
         }
     }
 
     private fun init() {
-        addView(view)
         addView(gridLayout)
+        addView(view)
         initData()
         initDrag()
     }
 
     private fun initDrag() {
-        view.setOnTouchListener(TouchListener())
+
+    }
+
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        when (event.action) {
+            MotionEvent.ACTION_DOWN -> {
+                downPoint.x = event.x
+                downPoint.y = event.y
+                viewPoint.x = view.x
+                viewPoint.y = view.y
+            }
+            MotionEvent.ACTION_MOVE -> {
+                val x = (event.x - downPoint.x) + viewPoint.x
+                val y = (event.y - downPoint.y) + viewPoint.y
+                if (boundaryJudge(x, y)) return true
+                println("$x -- $y---------- ${gridLayout.width}      ${gridLayout.height}")
+                view.x = x
+                view.y = y
+                if (x > gridLayout.x && y > gridLayout.y && x < (gridLayout.width + gridLayout.x) && y < (gridLayout.height + gridLayout.y)) {
+                    fillingGrid(x, y)
+                }
+            }
+            MotionEvent.ACTION_UP -> {
+                val x = (event.x - downPoint.x) + viewPoint.x
+                val y = (event.y - downPoint.y) + viewPoint.y
+                preView?.let {
+                    if (x > gridLayout.x && y > gridLayout.y && x < (gridLayout.width + gridLayout.x) && y < (gridLayout.height + gridLayout.y)) {
+                        it.tag = 1
+                        it.setBackgroundColor(selectColor)
+                    } else {
+                        it.tag = 0
+                        it.setBackgroundColor(defaultGridColor)
+                    }
+                }
+                view.x = initPoint.x.toFloat()
+                view.y = initPoint.y.toFloat()
+                preView = null
+            }
+
+        }
+
+        return true;
+    }
+
+    private fun setBg(view: View, color: Int) {
+
+    }
+
+    private fun boundaryJudge(x: Float, y: Float): Boolean {
+        if (x < 0) return true
+        if (y < 0) return true
+        if (x > (width - sizePoint.x)) return true
+        if (y > (height - sizePoint.y)) return true
+        return false
+    }
+
+    private fun fillingGrid(x: Float, y: Float) {
+        //计算框内位置，+ 格子的一半，等于中心点距离边上的位置
+        val nx = x - gridLayout.x + (sizePoint.x / 2)
+        val ny = y - gridLayout.y + (sizePoint.y / 2)
+
+        //计算索引位置
+        val i = (nx / sizePoint.x).toInt()
+        val j = (ny / sizePoint.y).toInt()
+
+        if (j >= gridRowCount || i >= gridColumnCount) return
+//        println("$nx   $ny     $i  $j")
+//
+        val v = array[j][i]
+        if (preView != null && preView == v) {
+            return
+        }
+        if (v.tag == 1) {
+            return
+        }
+
+        preView?.tag = 0
+        preView?.setBackgroundColor(defaultGridColor)
+
+        preView = v
+        v.tag = 1
+        v.setBackgroundColor(scrollSelectColor)
     }
 
     private fun initData() {
-        array = Array(10, init = {
-            Array(5, init = {
+        array = Array(gridRowCount, init = {
+            Array(gridColumnCount, init = {
                 View(context).apply {
                     val layoutParams = FrameLayout.LayoutParams(dpToPx(30f), dpToPx(30f))
                     this.layoutParams = layoutParams
-                    setBackgroundColor(Color.GRAY)
+                    setBackgroundColor(defaultGridColor)
                 }
             })
         })
@@ -104,55 +198,7 @@ class DragGridGroupView : FrameLayout {
     }
 
 
-    inner class TouchListener constructor(private val delay: Long = 0) :
-        View.OnTouchListener {
-        private var downX = 0f
-        private var downY = 0f
-        private var downTime: Long = 0
-        private var isMove = false
-        private var canDrag = false
-        private fun haveDelay(): Boolean {
-            return delay > 0
-        }
 
-        @SuppressLint("ClickableViewAccessibility")
-        override fun onTouch(v: View, event: MotionEvent): Boolean {
-            when (event.action) {
-                MotionEvent.ACTION_DOWN -> {
-                    downX = event.x
-                    downY = event.y
-                    isMove = false
-                    downTime = System.currentTimeMillis()
-                    canDrag = !haveDelay()
-                }
-                MotionEvent.ACTION_MOVE -> {
-                    Log.e("---345--->", "--------- ${canDrag}");
-                    if (haveDelay() && !canDrag) {
-                        val currMillis = System.currentTimeMillis()
-                        if (currMillis - downTime >= delay) {
-                            canDrag = true
-                        }
-                    }
-                    if (canDrag) {
-                        val xDistance = event.x - downX
-                        val yDistance = event.y - downY
-                        if (xDistance != 0f && yDistance != 0f) {
-                            val l = (v.left + xDistance).toInt()
-                            val t = (v.top + yDistance).toInt()
-                            //                        v.layout(l, t, r, b);
-                            v.left = l
-                            v.top = t
-                            v.right = (l + v.width)
-                            v.bottom = (t + v.height)
-                            isMove = true
-                        }
-                    }
-                }
-                else -> {}
-            }
-            return isMove
-        }
-    }
 
 }
 
