@@ -133,9 +133,6 @@ class DragGridGroupView : FrameLayout {
         for (i in array.indices) {
             for (j in 0 until array[i].size) {
                 val v = array[i][j]
-                v.setOnClickListener {
-                    Toast.makeText(context, it.y.toString(), Toast.LENGTH_SHORT).show()
-                }
                 gridLayout.addView(v)
             }
         }
