@@ -1,10 +1,10 @@
 package com.example.demotest.view
 
+import android.animation.ArgbEvaluator
+import android.animation.ObjectAnimator
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.Color
-import android.graphics.Point
-import android.graphics.PointF
+import android.graphics.*
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
@@ -19,6 +19,7 @@ import android.widget.Toast
  * @time 2022/09/20 17:31
  * @description
  */
+@SuppressLint("ClickableViewAccessibility")
 class DragGridGroupView : FrameLayout {
 
     constructor(context: Context) : this(context, null)
@@ -33,10 +34,12 @@ class DragGridGroupView : FrameLayout {
         context: Context, attrs: AttributeSet?, defStyleAttr: Int, defStyleRes: Int
     ) : super(context, attrs, defStyleAttr, defStyleRes)
 
+    //二维格子
     lateinit var array: Array<Array<View>>
-    private val gridRowCount = 10 //竖向数量
-    private val gridColumnCount = 5 //横向数量
+    private val gridRowCount = 15 //行数量
+    private val gridColumnCount = 10 //列数量
 
+    //上一个  iew
     private var preView: View? = null
 
     //初始位置
@@ -47,28 +50,53 @@ class DragGridGroupView : FrameLayout {
 
     //按下位置
     private val downPoint: PointF = PointF(0f, 0f)
+
+    //View 位置
     private val viewPoint: PointF = PointF(0f, 0f)
 
+    //是否为按下状态
+    private var isDown = false
 
-    private val defaultGridColor = Color.parseColor("#8A8C8E")
-    private val scrollSelectColor = Color.parseColor("#2F3132")
-    private val selectColor = Color.parseColor("#00BD2F")
+    //默认格子颜色
+    private val defaultGridColor = Color.parseColor("#D8D5D7")
+
+    //滑动时选中的颜色
+    private val scrollSelectColor = Color.parseColor("#A6D8A9")
+
+    //选中的颜色
+    private val selectColor = Color.parseColor("#4FD855")
+
+    private val paint by lazy {
+        Paint().apply {
+            color = Color.GRAY
+            strokeWidth = dpToPx(1f).toFloat()
+            style = Paint.Style.STROKE
+            pathEffect = dashPathEffect
+        }
+    }
+    private val path = Path()
+
+    private val dashLength = dpToPx(3f).toFloat()
+    private val dashPathEffect by lazy {
+        DashPathEffect(
+            floatArrayOf(dashLength, dashLength), dashLength
+        )
+    }
 
     val view by lazy {
         View(context).apply {
-            val layoutParams = FrameLayout.LayoutParams(sizePoint.x, sizePoint.y)
+            val layoutParams = LayoutParams(sizePoint.x, sizePoint.y)
             layoutParams.marginStart = initPoint.x
             layoutParams.topMargin = initPoint.y
             this.layoutParams = layoutParams
-            setBackgroundColor(Color.RED)
+            setBackgroundColor(selectColor)
         }
     }
 
     private val gridLayout by lazy {
-        GridLayout(context).apply {
+        NotTouchGridLayout(context).apply {
             val layoutParams =
-                FrameLayout.LayoutParams(sizePoint.x * gridColumnCount, sizePoint.y * gridRowCount)
-
+                LayoutParams(sizePoint.x * gridColumnCount, sizePoint.y * gridRowCount)
             layoutParams.marginStart = initPoint.x
             layoutParams.topMargin = initPoint.y + (sizePoint.y * 2)
 
@@ -85,7 +113,34 @@ class DragGridGroupView : FrameLayout {
         addView(view)
         initData()
         initDrag()
+        setWillNotDraw(false)
     }
+
+    private fun initPadding() {
+        paddingStart
+    }
+
+    private fun initData() {
+        array = Array(gridRowCount, init = {
+            Array(gridColumnCount, init = {
+                View(context).apply {
+                    val layoutParams = LayoutParams(dpToPx(30f), dpToPx(30f))
+                    this.layoutParams = layoutParams
+                    setBackgroundColor(defaultGridColor)
+                }
+            })
+        })
+        for (i in array.indices) {
+            for (j in 0 until array[i].size) {
+                val v = array[i][j]
+                v.setOnClickListener {
+                    Toast.makeText(context, it.y.toString(), Toast.LENGTH_SHORT).show()
+                }
+                gridLayout.addView(v)
+            }
+        }
+    }
+
 
     private fun initDrag() {
 
@@ -95,6 +150,8 @@ class DragGridGroupView : FrameLayout {
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
+                isDown = true
+                invalidate()
                 downPoint.x = event.x
                 downPoint.y = event.y
                 viewPoint.x = view.x
@@ -109,19 +166,23 @@ class DragGridGroupView : FrameLayout {
                 }
             }
             MotionEvent.ACTION_UP -> {
+                isDown = false
+                invalidate()
                 val x = (event.x - downPoint.x) + viewPoint.x
                 val y = (event.y - downPoint.y) + viewPoint.y
                 preView?.let {
                     if (x > gridLayout.x && y > gridLayout.y && x < (gridLayout.width + gridLayout.x) && y < (gridLayout.height + gridLayout.y)) {
                         it.tag = 1
-                        it.setBackgroundColor(selectColor)
+                        setBgColor(it, scrollSelectColor, selectColor)
                     } else {
                         it.tag = 0
-                        it.setBackgroundColor(defaultGridColor)
+                        setBgColor(it, scrollSelectColor, defaultGridColor)
                     }
                 }
-                view.x = initPoint.x.toFloat()
-                view.y = initPoint.y.toFloat()
+                val animate = view.animate()
+                animate.x(initPoint.x.toFloat())
+                animate.y(initPoint.y.toFloat())
+                animate.start()
                 preView = null
             }
 
@@ -130,33 +191,48 @@ class DragGridGroupView : FrameLayout {
         return true;
     }
 
-    private fun setBg(view: View, color: Int) {
-
+    private fun setBgColor(view: View, vararg color: Int) {
+        val colorAnim = ObjectAnimator.ofInt(view, "backgroundColor", *color)
+        colorAnim.duration = 500
+        colorAnim.setEvaluator(ArgbEvaluator())
+        colorAnim.start()
     }
 
     private fun move(x: Float, y: Float) {
+        //计算右边和下边边界
         val right = (width - sizePoint.x)
         val bottom = (height - sizePoint.y)
-        if (x > 0 && y > 0 && x < right && y < bottom) {
+        //内部直接滑动
+        if (x >= 0 && y >= 0 && x <= right && y <= bottom) {
             view.x = x
             view.y = y
             return
         }
-        if (x < 0 ) {
+        //-------------- 拖动边界判断
+        if (x < 0 && y < 0) { //左上角
+            view.x = 0f
+            view.y = 0f
+        } else if (x < 0 && y > bottom) { //左下角
+            view.x = 0f
+            view.y = bottom.toFloat()
+        } else if (x > right && y < 0) { //右上角
+            view.x = right.toFloat()
+            view.y = 0f
+        } else if (x > right && y > bottom) { //右下角
+            view.x = right.toFloat()
+            view.y = bottom.toFloat()
+        } else if ((x > 0 && x < right) && y < 0) { // y越上界
+            view.x = x
+            view.y = 0f
+        } else if ((x > 0 && x < right) && y > bottom) { // y越下界
+            view.x = x
+            view.y = bottom.toFloat()
+        } else if ((y > 0 && y < bottom) && x < 0) { // x越左界
             view.x = 0f
             view.y = y
-        }
-        if (y < 0) {
-            view.y = 0f
-            view.x = x
-        }
-        if (x > right) {
+        } else if ((y > 0 && y < bottom) && x > right) { // x越右界
             view.x = right.toFloat()
             view.y = y
-        }
-        if (y > bottom) {
-            view.y = bottom.toFloat()
-            view.x = x
         }
     }
 
@@ -178,34 +254,38 @@ class DragGridGroupView : FrameLayout {
         if (v.tag == 1) {
             return
         }
-
-        preView?.tag = 0
-        preView?.setBackgroundColor(defaultGridColor)
-
+        preView?.run {
+            tag = 0
+            setBgColor(this, scrollSelectColor, defaultGridColor)
+        }
         preView = v
         v.tag = 1
-        v.setBackgroundColor(scrollSelectColor)
+        setBgColor(v, defaultGridColor, scrollSelectColor)
     }
 
-    private fun initData() {
-        array = Array(gridRowCount, init = {
-            Array(gridColumnCount, init = {
-                View(context).apply {
-                    val layoutParams = FrameLayout.LayoutParams(dpToPx(30f), dpToPx(30f))
-                    this.layoutParams = layoutParams
-                    setBackgroundColor(defaultGridColor)
-                }
-            })
-        })
-        for (i in array.indices) {
-            for (j in 0 until array[i].size) {
-                val v = array[i][j]
-                v.setOnClickListener {
-                    Toast.makeText(context, it.y.toString(), Toast.LENGTH_SHORT).show()
-                }
-                gridLayout.addView(v)
-            }
+    /** 等别的 view 绘制完成后，在进行绘制，否则会被覆盖 */
+    override fun dispatchDraw(canvas: Canvas?) {
+        super.dispatchDraw(canvas)
+        if (!isDown) return
+        val initX = initPoint.x.toFloat()
+        val initY = initPoint.y + (sizePoint.y * 2).toFloat()
+        val gridWidth = gridLayout.width
+        val gridHeight = gridLayout.height
+        for (i in 0..gridRowCount) {
+            val y = (sizePoint.y * i) + initY
+            path.moveTo(initX, y)
+            path.lineTo(initX + gridWidth, y)
+            canvas?.drawPath(path, paint)
+            path.reset()
         }
+        for (i in 0..gridColumnCount) {
+            val x = (sizePoint.x * i) + initX
+            path.moveTo(x, initY)
+            path.lineTo(x, initY + gridHeight)
+            canvas?.drawPath(path, paint)
+            path.reset()
+        }
+
     }
 
     private fun dpToPx(dpValue: Float): Int {
@@ -213,6 +293,26 @@ class DragGridGroupView : FrameLayout {
         return (dpValue * scale + 0.5f).toInt()
     }
 
-
 }
 
+class NotTouchGridLayout : GridLayout {
+
+    constructor(context: Context?) : super(context)
+    constructor(context: Context?, attrs: AttributeSet?) : super(context, attrs)
+    constructor(context: Context?, attrs: AttributeSet?, defStyleAttr: Int) : super(
+        context,
+        attrs,
+        defStyleAttr
+    )
+
+    constructor(
+        context: Context?,
+        attrs: AttributeSet?,
+        defStyleAttr: Int,
+        defStyleRes: Int
+    ) : super(context, attrs, defStyleAttr, defStyleRes)
+
+    override fun onInterceptTouchEvent(ev: MotionEvent?): Boolean {
+        return true
+    }
+}
