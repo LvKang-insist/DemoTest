@@ -83,4 +83,6 @@ dependencies {
 
     // Required for all Google VR apps
     implementation 'com.google.vr:sdk-base:1.160.0'
+
+    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.10'
 }

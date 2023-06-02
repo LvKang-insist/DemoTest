@@ -1,28 +1,21 @@
 package com.example.demotest
 
 import android.annotation.SuppressLint
-import android.app.Dialog
-import android.graphics.BitmapFactory
-import android.graphics.Color
+import android.app.Activity
 import android.os.Build
 import android.os.Bundle
-import android.util.ArrayMap
-import android.util.Log
-import android.util.SparseArray
+import android.os.Handler
 import android.view.*
-import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import androidx.viewpager2.adapter.FragmentStateAdapter
-import androidx.viewpager2.widget.ViewPager2
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import com.example.demotest.databinding.ActivityMainBinding
-import com.example.demotest.view.PageFragment
 import com.gyf.immersionbar.ktx.immersionBar
-import net.lucode.hackware.magicindicator.buildins.commonnavigator.CommonNavigator
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
@@ -52,20 +45,36 @@ class MainActivity : AppCompatActivity() {
 //        setTab()
 //
 //        Dialog(this)
+        lifecycleScope.launch{
+            launch (Dispatchers.IO){
+                binding.downImage.setImageResource(R.drawable.blur_bg)
+            }
+        }
+        binding.downImage.post {
+
+        }
         binding.downImage.setOnClickListener {
             val pop = TestPopWindow(this)
             pop.setAlignBackground(true)
             pop.setAlignBackgroundGravity(Gravity.TOP)
             pop.showPopupWindow(binding.title)
 
+            System.gc()
 //            Toast.makeText(this, "哈哈哈", Toast.LENGTH_SHORT).show()
 
         }
+
+
 //
 //        tabList.forEach { _ ->
 //            fragments.add(PageFragment())
 //        }
 //        initPaNormalView()
+    }
+
+
+    override fun onResume() {
+        super.onResume()
     }
 
     fun initPaNormalView() {
